@@ -1,20 +1,27 @@
 const saltHashEncrypt = require('./Encryptes/bcrypt.js');
+const database = require('./database/database.js');
+const express = require('express')
 
-const checkSaltHashEncrypt = async () => {
-    const userRealPassword = "lk4uhg324lihg23kl@#HJU#@Hkhjb"
-    const userFalseAttempPassword = "lkhjfsdbaelihjfba87yu"
-    const userHashRealPassword =  await saltHashEncrypt.createUserHash(userRealPassword)
+const server = express()
 
-    // now we will attemp to compare the passwords with the real one and false one using the hash compare
-    console.log('The User password is: '+ userRealPassword + "\n")
-    console.log('Hash check with the real password: '+ userRealPassword)
-    console.log('hash compare return: '+ await saltHashEncrypt.checkIfThePasswordIsCorrect(userRealPassword, userHashRealPassword) + "\n")
-    console.log('Hash check with the fake password: '+ userFalseAttempPassword)
-    console.log('hash compare return: '+ await saltHashEncrypt.checkIfThePasswordIsCorrect(userFalseAttempPassword, userHashRealPassword) + "\n")
-}
+server.get('/', (req, res) => {
+  res.send('Hello World')
+})
 
-const main = () => {
-    checkSaltHashEncrypt()
-}
+server.get('/test', async(req, res) => {
+  res.send(await database.testDB());
+})
 
-main()
+server.listen(3000, () => {
+  console.log('Server is running on http://localhost:3000')
+})
+
+
+
+
+
+// const main = () => {
+//     // saltHashEncrypt.checkSaltHashEncrypt()
+// }
+
+// main()
