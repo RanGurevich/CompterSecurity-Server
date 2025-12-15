@@ -10,7 +10,7 @@ const config = {
 const checkUserExists = async (username) => {
     const connection = await mysql.createConnection(config);
     try {
-        const [rows] = await connection.execute('SELECT * FROM users WHERE username = ?', [username]);
+        const [rows] = await connection.execute('SELECT * FROM users WHERE username = ?', [ mysql.escape(username)]);
         return rows.length > 0;
     } finally {
         await connection.end();
@@ -21,7 +21,7 @@ const createUser = async (username, email, passwordHash) => {
     const connection = await mysql.createConnection(config);
     try {
         const sql = `INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)`;
-        const [result] = await connection.execute(sql, [username, email, passwordHash]);
+        const [result] = await connection.execute(sql, [mysql.escape(username), mysql.escape(email), mysql.escape(passwordHash)]);
         return result;
         
     } catch (error) {
@@ -52,3 +52,6 @@ const testDB = async () => {
 };
 
 module.exports = { createUser, testDB, checkUserExists, getUserByUsername };
+
+
+
