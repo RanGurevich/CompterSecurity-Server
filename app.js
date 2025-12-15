@@ -1,94 +1,111 @@
 const express = require('express');
 const cors = require('cors');
 
-// הייבואים שלך נשארו אותו דבר
 const bcryptUtils = require('./Encryptes/bcrypt'); 
 const database = require('./database/UserUtils/userUtils'); 
 
 const app = express();
 const port = 3000;
-
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$/;
+const HISTORY_LIMIT = 3;
 app.use(cors());
 app.use(express.json());
 
-// --- REGISTER ---
 app.post('/register', async (req, res) => {
     const { username, email, password } = req.body;
-
-    // בדיקת שדות
-    if (!username || !email || !password) {
-        console.log("Register failed: Missing fields");  
-        return res.status(400).json({ message: "Missing fields" });
-    }
+    if (!username || !email || !password) return res.status(400).json({ message: "Missing fields" });
 
     try {
         const userExists = await database.checkUserExists(username);
-        if (userExists) {
-            console.log(`Register failed: Username '${username}' taken`);
-            return res.status(409).json({ message: "Username is already taken!" });
-        }
+        if (userExists) return res.status(409).json({ message: "Username taken" });
 
         const passwordHash = await bcryptUtils.createUserHash(password);
         await database.createUser(username, email, passwordHash);
-
-        console.log(`New user registered: ${username}`);
         res.status(201).json({ message: "Registration successful" });
-
     } catch (error) {
-        console.error("Register Error:", error.message);
-        
-        if (error.code === 'ER_DUP_ENTRY') {
-            res.status(409).json({ message: "Email already exists" });
-        } else {
-            res.status(500).json({ message: "Server error" });
-        }
-    }
-});
-
-app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    console.log(`Login attempt for: ${username}`); 
-
-    if (!username || !password) {
-        return res.status(400).json({ message: "Missing username or password" });
-    }
-
-    try {
-        const user = await database.getUserByUsername(username);
-
-        if (!user) {
-            console.log("Login failed: User not found");
-            return res.status(401).json({ message: "Username or Password incorrect" });
-        }
-
-        const isMatch = await bcryptUtils.checkIfThePasswordIsCorrect(password, user.password_hash);
-        
-        if (isMatch) {
-            console.log("Login success!");
-            res.status(200).json({ message: "Login successful" });
-        } else {
-            console.log("Login failed: Wrong password");
-            res.status(401).json({ message: "Username or Password incorrect" });
-        }
-
-    } catch (error) {
-        console.error("Login Error:", error.message);
         res.status(500).json({ message: "Server error" });
     }
 });
 
-// מסלולי בדיקה 
-app.get('/', (req, res) => res.send('Server is up!'));
+// --- LOGIN ---
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    console.log(`Login attempt: ${username}`);
 
-app.get('/test', async (req, res) => {
     try {
-        const users = await database.testDB();
-        res.json(users);
+        const user = await database.getUserByUsername(username);
+        if (!user) return res.status(401).json({ message: "Auth failed" });
+
+        const isMatch = await bcryptUtils.checkIfThePasswordIsCorrect(password, user.password_hash);
+        if (isMatch) {
+            console.log("Login Success");
+            res.status(200).json({ message: "Login successful", username: user.username });
+        } else {
+            console.log("Login Failed: Bad password");
+            res.status(401).json({ message: "Auth failed" });
+        }
     } catch (error) {
-        res.status(500).json({ message: 'DB error' });
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+// --- CHANGE PASSWORD ---
+app.post('/change-password', async (req, res) => {
+    const { username, oldPassword, newPassword } = req.body;
+
+    if (!username || !oldPassword || !newPassword) 
+        return res.status(400).json({ message: "Missing fields" });
+
+    if (!passwordRegex.test(newPassword))
+         return res.status(400).json({ message: "Password weak" });
+
+    try {
+        const user = await database.getUserByUsername(username);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        const isMatch = await bcryptUtils.checkIfThePasswordIsCorrect(oldPassword, user.password_hash);
+        if (!isMatch) {
+            return res.status(401).json({ message: "Incorrect old password" });
+        }
+
+        let history = [];
+        try { history = JSON.parse(user.password_history || "[]"); } catch (e) {}
+
+        for (let oldHash of history) {
+            if (await bcryptUtils.checkIfThePasswordIsCorrect(newPassword, oldHash)) {
+                return res.status(400).json({ message: "Password in history" });
+            }
+        }
+        
+        if (await bcryptUtils.checkIfThePasswordIsCorrect(newPassword, user.password_hash)) {
+             return res.status(400).json({ message: "Same as current password" });
+        }
+
+        const newHash = await bcryptUtils.createUserHash(newPassword);
+        
+        history.unshift(user.password_hash);
+        if (history.length > HISTORY_LIMIT) history.pop();
+
+        const result = await database.updateUserPassword(username, newHash, JSON.stringify(history));
+        
+        console.log("DB Update Result:", result); 
+
+        if (result && result.affectedRows > 0) {
+            console.log("SUCCESS: Password Changed!");
+            res.status(200).json({ message: "Password updated" });
+        } else {
+            console.log("ERROR: No rows affected!");
+            res.status(500).json({ message: "Update failed internally" });
+        }
+
+    } catch (error) {
+        console.error("Change Pwd Error:", error);
+        res.status(500).json({ message: "Server error" });
     }
 });
 
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`Server running on port ${port}`);
 });

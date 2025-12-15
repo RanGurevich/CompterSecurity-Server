@@ -23,7 +23,6 @@ const createUser = async (username, email, passwordHash) => {
         const sql = `INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)`;
         const [result] = await connection.execute(sql, [username, email, passwordHash]);
         return result;
-        
     } catch (error) {
         throw error;
     } finally {
@@ -41,6 +40,24 @@ const getUserByUsername = async (username) => {
     }
 };
 
+async function updateUserPassword(username, newHash, historyJson) {
+    const connection = await mysql.createConnection(config);
+    try {
+        const query = `
+            UPDATE users 
+            SET password_hash = ?, password_history = ? 
+            WHERE username = ?
+        `;
+        const [result] = await connection.execute(query, [newHash, historyJson, username]);
+        return result; 
+    } catch (error) {
+        console.error("DB Update Error:", error);
+        throw error;
+    } finally {
+        await connection.end();
+    }
+}
+
 const testDB = async () => {
     const connection = await mysql.createConnection(config);
     try {
@@ -51,4 +68,10 @@ const testDB = async () => {
     }
 };
 
-module.exports = { createUser, testDB, checkUserExists, getUserByUsername };
+module.exports = { 
+    createUser, 
+    testDB, 
+    checkUserExists, 
+    getUserByUsername, 
+    updateUserPassword 
+};
