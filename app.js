@@ -7,7 +7,7 @@ const database = require('./database/UserUtils/userUtils');
 const app = express();
 const port = 3000;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$/;
-const HISTORY_LIMIT = 3;
+const HISTORY_LIMIT = 2;
 app.use(cors());
 app.use(express.json());
 
