@@ -47,7 +47,6 @@ const incrementLoginAttempts = async (username) => {
 };
 
 const lockUser = async (username) => {
-    // הפקודה DATE_ADD(NOW(), INTERVAL 15 MINUTE) עובדת תמיד
     const sql = `UPDATE users SET is_locked = 1, lock_until = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE username = ?`;
     await pool.execute(sql, [username]);
 };
@@ -55,6 +54,28 @@ const lockUser = async (username) => {
 const testDB = async () => {
     const [rows] = await pool.execute('SELECT * FROM users');
     return rows;
+};
+
+const saveResetToken = async (email, token, expiry) => {
+    // תיקון Timezone קריטי: ממיר לזמן מקומי שמתאים ל-MySQL
+    // ללא זה, השרת שומר זמן UTC והשאילתה חושבת שהטוקן פג תוקף מייד
+    const offset = expiry.getTimezoneOffset() * 60000; 
+    const localISOTime = (new Date(expiry - offset)).toISOString().slice(0, 19).replace('T', ' ');
+
+    const sql = `UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE email = ?`;
+    const [result] = await pool.execute(sql, [token, localISOTime, email]);
+    return result;
+};
+
+const getUserByResetToken = async (token) => {
+    const sql = `SELECT * FROM users WHERE reset_token = ? AND reset_token_expires > NOW()`;
+    const [rows] = await pool.execute(sql, [token]);
+    return rows[0];
+};
+
+const clearResetToken = async (username) => {
+    const sql = `UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE username = ?`;
+    await pool.execute(sql, [username]);
 };
 
 module.exports = { 
@@ -65,5 +86,8 @@ module.exports = {
     updateUserPassword,
     resetLoginAttempts,
     incrementLoginAttempts,
-    lockUser
+    lockUser,
+    saveResetToken,
+    getUserByResetToken,
+    clearResetToken
 };
