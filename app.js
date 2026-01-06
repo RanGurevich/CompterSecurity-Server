@@ -4,17 +4,22 @@ const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit'); 
-
+const jwt = require('jsonwebtoken');
 const bcryptUtils = require('./Encryptes/bcrypt'); 
 const database = require('./database/UserUtils/userUtils'); 
 const config = require('./passwordSecurityConfig'); 
+const authJWT = require('./Encryptes/authJWT');
+const cookieParser = require('cookie-parser'); 
 
 const app = express();
 const port = 3000;
 
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: 'http://localhost:5173', 
+  credentials: true
+}));app.use(express.json());
 
+app.use(cookieParser()); 
 // הגדרת Rate Limiter (הגנה רשתית)
 const loginLimiter = rateLimit(config.rateLimit);
 
@@ -40,6 +45,10 @@ app.post('/register', async (req, res) => {
         console.error("Register Error:", error);
         res.status(500).json({ message: "Server error" });
     }
+});
+
+app.get('/protectedJWT', authJWT.authenticateToken, (req, res) => {
+  res.json({ message: `Hello user ${req.user.id}` });
 });
 
 app.post('/login', async (req, res) => {
@@ -74,6 +83,7 @@ app.post('/login', async (req, res) => {
         if (isMatch) {
             console.log("Login Success");
             await database.resetLoginAttempts(username);
+            authJWT.setAuthCookie(res, username);
             res.status(200).json({ message: "Login successful", username: user.username });
         } else {
             console.log("Login Failed: Bad password");
@@ -103,9 +113,11 @@ app.post('/login', async (req, res) => {
 
 
 // --- CHANGE PASSWORD ---
-app.post('/change-password', async (req, res) => {
-    const { username, oldPassword, newPassword } = req.body;
-
+app.post('/change-password', authJWT.authenticateToken, async (req, res) => {
+    console.log(req.headers.cookie);
+    const {oldPassword, newPassword } = req.body;
+    console.log(req.username.user)
+    username = req.username.user;
     if (!username || !oldPassword || !newPassword) 
         return res.status(400).json({ message: "Missing fields" });
 
