@@ -207,36 +207,48 @@ app.post('/forgot-password', async (req, res) => {
     }
 });
 
-// --- RESET PASSWORD (תיקון בדיקת הטוקן) ---
+// --- RESET PASSWORD (עם אכיפת היסטוריה) ---
 app.post('/reset-password', async (req, res) => {
     const { token, newPassword } = req.body;
-    
-    console.log(`[DEBUG] Attempting reset with token: ${token}`);
-
-    // המשתמש מזין את הקוד שקיבל במייל. אנחנו ממירים אותו ל-SHA-1 ובודקים מול ה-DB.
     const tokenHash = crypto.createHash('sha1').update(token).digest('hex');
 
     try {
-        // שליפת המשתמש לפי ה-Hash
         const user = await database.getUserByResetToken(tokenHash);
         
         if (!user) {
-            console.log(`[FAIL] Token hash not found or expired in DB.`);
             return res.status(400).json({ message: "Invalid or expired token" });
         }
-        
-        console.log(`[SUCCESS] Token valid for user: ${user.username}`);
 
-        // בדיקת חוזק סיסמה
         if (!config.passwordPolicy.regex.test(newPassword)) {
              return res.status(400).json({ message: "Password weak" });
         }
 
-        // יצירת Hash לסיסמה החדשה
+        let history = [];
+        try { 
+            history = JSON.parse(user.password_history || "[]"); 
+        } catch (e) { 
+            history = []; 
+        }
+
+        const isSameAsCurrent = await bcryptUtils.checkIfThePasswordIsCorrect(newPassword, user.password_hash);
+        if (isSameAsCurrent) {
+            return res.status(400).json({ message: "Cannot use current password" });
+        }
+
+        for (let oldHash of history) {
+            const isMatch = await bcryptUtils.checkIfThePasswordIsCorrect(newPassword, oldHash);
+            if (isMatch) {
+                return res.status(400).json({ message: "Password is in history (last 3 passwords)" });
+            }
+        }
+        // ---------------------------------------------------------
+
         const newPassHash = await bcryptUtils.createUserHash(newPassword);
         
-        // עדכון סיסמה ומחיקת הטוקן
-        await database.updateUserPassword(user.username, newPassHash, user.password_history || "[]");
+        history.unshift(user.password_hash);
+        if (history.length > config.passwordPolicy.historyLimit) history.pop(); 
+
+        await database.updateUserPassword(user.username, newPassHash, JSON.stringify(history));
         await database.clearResetToken(user.username);
         
         res.json({ message: "Password reset successful" });
