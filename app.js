@@ -76,7 +76,6 @@ app.post('/login', async (req, res) => {
                 });
             }
         }
-        // ------------------------------------
 
         const isMatch = await bcryptUtils.checkIfThePasswordIsCorrect(password, user.password_hash);
         
@@ -172,13 +171,13 @@ app.post('/change-password', authJWT.authenticateToken, async (req, res) => {
 });
 
 
-// --- הגדרת ה"בוט" ששולח את המיילים ---
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-     user: process.env.EMAIL_USER,
-     pass: process.env.EMAIL_PASS
-    }
+  host: "smtp.gmail.com",
+  port: 587,
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
 });
 
 // --- FORGOT PASSWORD ---
@@ -194,7 +193,8 @@ app.post('/forgot-password', async (req, res) => {
         await database.saveResetToken(email, tokenHash, expiryDate);
         
         const mailOptions = {
-            from: 'Syber sequrity Support',
+         from: `"Syber Security Support" <${process.env.GMAIL_USER}>`,
+
             to: email,
             subject: 'Reset Your Password - Syber sequrity',
             html: `
@@ -206,6 +206,9 @@ app.post('/forgot-password', async (req, res) => {
                 <p>If you did not request this, please ignore this email.</p>
             `
         };
+        console.log("MAIL USER:", process.env.GMAIL_USER);
+        console.log("MAIL PASS exists:", !!process.env.GMAIL_APP_PASSWORD);
+
 
         // שליחה בפועל
         await transporter.sendMail(mailOptions);
