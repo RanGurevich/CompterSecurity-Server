@@ -46,7 +46,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'tomernado','tomernado123@gmail.com','$2b$10$l.aGf4zscjMHRE0b4vnHRucniKF9epzSV4q25RDRgAdlchpbF8Gzi',NULL,'2025-12-16 18:19:16',0,0,NULL,NULL,NULL),(2,'tomernado1','tomernado1@gmail.com','$2b$10$6OApzP06BJW2iMmiSfDfveCc/1dTbjmdbJAXC5jFaR.LAqk/OmSOO',NULL,'2025-12-16 18:22:10',3,1,'2026-01-01 14:41:15',NULL,NULL),(3,'tomernado12','tomernado123@gmail.comt','$2b$10$vsnT4L4K./tx/q6vL4skMuCE5l99KJ3FdzupjgNTx104HJklk3R02',NULL,'2025-12-16 18:23:54',3,1,NULL,NULL,NULL),(4,'tomernado1233','tomernado1233@gmail.com','$2b$10$RIe6Ck.FVHIITAH.LwrIWuztfTRv4UlOEqQ41k9A4D8Lk4V0PQIuK','[]','2026-01-01 12:24:48',0,0,NULL,NULL,NULL),(5,'ran','ran7002@gmail.com','$2b$10$.oBAc53IaKmM/cGFr68.g.u31iGAUOheFor6ZTacMR5w8dF2pF3Fy','[\"$2b$10$1qzunMJ4ocKa08zNLqUJE.To4fzNzP3T/Woe0sVeZfvdaQSqh4Nu6\",\"$2b$10$V1QOMgEJZoDApQWw5IAJxOXyxZi2s2iLml4wjeiyerUjZV/TJHnqu\",\"$2b$10$eFliP8lrIQ85XCgk0/FMU.7XrxtmTVvySAcJS32k2rIIXRaGAHu72\"]','2026-01-06 11:10:56',3,1,'2026-01-06 15:28:08',NULL,NULL),(7,'ran2','rangurevich14@gmail.com','$2b$10$LzN2U88wYCrtxcgcrfPrBee3fT4aNxglURixJ7UQ7a3uCnZFYwwz.',NULL,'2026-01-06 13:14:50',0,0,NULL,NULL,NULL);
+INSERT INTO `users` VALUES (1,'tomernado','tomernado123@gmail.com','$2b$10$l.aGf4zscjMHRE0b4vnHRucniKF9epzSV4q25RDRgAdlchpbF8Gzi',NULL,'2025-12-16 18:19:16',0,0,NULL,NULL,NULL),(2,'tomernado1','tomernado1@gmail.com','$2b$10$6OApzP06BJW2iMmiSfDfveCc/1dTbjmdbJAXC5jFaR.LAqk/OmSOO',NULL,'2025-12-16 18:22:10',3,1,'2026-01-01 14:41:15',NULL,NULL),(3,'tomernado12','tomernado123@gmail.comt','$2b$10$vsnT4L4K./tx/q6vL4skMuCE5l99KJ3FdzupjgNTx104HJklk3R02',NULL,'2025-12-16 18:23:54',3,1,NULL,NULL,NULL),(4,'tomernado1233','tomernado1233@gmail.com','$2b$10$RIe6Ck.FVHIITAH.LwrIWuztfTRv4UlOEqQ41k9A4D8Lk4V0PQIuK','[]','2026-01-01 12:24:48',0,0,NULL,NULL,NULL),(5,'ran','ran7002@gmail.com','$2b$10$.oBAc53IaKmM/cGFr68.g.u31iGAUOheFor6ZTacMR5w8dF2pF3Fy','[\"$2b$10$1qzunMJ4ocKa08zNLqUJE.To4fzNzP3T/Woe0sVeZfvdaQSqh4Nu6\",\"$2b$10$V1QOMgEJZoDApQWw5IAJxOXyxZi2s2iLml4wjeiyerUjZV/TJHnqu\",\"$2b$10$eFliP8lrIQ85XCgk0/FMU.7XrxtmTVvySAcJS32k2rIIXRaGAHu72\"]','2026-01-06 11:10:56',0,0,NULL,'64ec6f1f786be35b2b746f1091e6f818b6337251','2026-01-08 22:29:08'),(7,'ran2','rangurevich14@gmail.com','$2b$10$LzN2U88wYCrtxcgcrfPrBee3fT4aNxglURixJ7UQ7a3uCnZFYwwz.',NULL,'2026-01-06 13:14:50',0,0,NULL,'abdb2de290eaa5e69db2ab5fb9498a1d56280d81','2026-01-09 00:53:52');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -59,4 +59,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-06 15:18:33
+-- Dump completed on 2026-01-09  2:41:22

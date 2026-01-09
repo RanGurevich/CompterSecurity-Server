@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const bcryptUtils = require('./Encryptes/bcrypt'); 
 const database = require('./database/UserUtils/userUtils'); 
+const customerDatabase = require('./database/CustomerUtils/customerUtils');
 const config = require('./passwordSecurityConfig'); 
 const authJWT = require('./Encryptes/authJWT');
 const cookieParser = require('cookie-parser'); 
@@ -116,7 +117,7 @@ app.post('/change-password', authJWT.authenticateToken, async (req, res) => {
     console.log(req.headers.cookie);
     const {oldPassword, newPassword } = req.body;
     console.log(req.username.user)
-    username = req.username.user;
+    const username = req.username.user;
     if (!username || !oldPassword || !newPassword) 
         return res.status(400).json({ message: "Missing fields" });
 
@@ -270,6 +271,156 @@ app.post('/reset-password', async (req, res) => {
         
     } catch (error) {
         console.error("Reset Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// --- CUSTOMERS ROUTES ---
+
+// GET /customers - קבלת כל הלקוחות של המשתמש המחובר
+app.get('/customers', authJWT.authenticateToken, async (req, res) => {
+    try {
+        const username = req.username.user;
+        if (!username) {
+            return res.status(401).json({ message: "ACCESS BLOCKED: Invalid token" });
+        }
+
+        const customers = await customerDatabase.getCustomersByUsername(username);
+        res.status(200).json({ customers });
+    } catch (error) {
+        console.error("Get Customers Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// GET /customers/:customerId - קבלת לקוח ספציפי
+app.get('/customers/:customerId', authJWT.authenticateToken, async (req, res) => {
+    try {
+        const username = req.username.user;
+        const customerId = parseInt(req.params.customerId);
+
+        if (!username) {
+            return res.status(401).json({ message: "ACCESS BLOCKED: Invalid token" });
+        }
+
+        if (isNaN(customerId)) {
+            return res.status(400).json({ message: "Invalid customer ID" });
+        }
+
+        const customer = await customerDatabase.getCustomerById(customerId);
+        
+        if (!customer) {
+            return res.status(404).json({ message: "Customer not found" });
+        }
+
+        // בדיקה שהלקוח שייך למשתמש המחובר
+        if (customer.userName !== username) {
+            return res.status(403).json({ message: "ACCESS BLOCKED: You can only access your own customers" });
+        }
+
+        res.status(200).json({ customer });
+    } catch (error) {
+        console.error("Get Customer Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// POST /customers - הוספת לקוח חדש
+app.post('/customers', authJWT.authenticateToken, async (req, res) => {
+    try {
+        const username = req.username.user;
+        const { customerName, customerPhone, userName } = req.body;
+
+        if (!username) {
+            return res.status(401).json({ message: "ACCESS BLOCKED: Invalid token" });
+        }
+
+        // בדיקה שהמשתמש לא מנסה להוסיף לקוח עם userName אחר
+        if (userName && userName !== username) {
+            return res.status(403).json({ message: "ACCESS BLOCKED: You can only create customers for your own account" });
+        }
+
+        if (!customerName) {
+            return res.status(400).json({ message: "Missing customerName field" });
+        }
+
+        // שימוש ב-username מהטוקן, לא מהבקשה
+        const result = await customerDatabase.createCustomer(username, customerName, customerPhone || null);
+        
+        if (result && result.affectedRows > 0) {
+            res.status(201).json({ message: "Customer created successfully", customerId: result.insertId });
+        } else {
+            res.status(500).json({ message: "Failed to create customer" });
+        }
+    } catch (error) {
+        console.error("Create Customer Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// DELETE /customers/:customerId - מחיקת לקוח
+app.delete('/customers/:customerId', authJWT.authenticateToken, async (req, res) => {
+    try {
+        const username = req.username.user;
+        const customerId = parseInt(req.params.customerId);
+
+        if (!username) {
+            return res.status(401).json({ message: "ACCESS BLOCKED: Invalid token" });
+        }
+
+        if (isNaN(customerId)) {
+            return res.status(400).json({ message: "Invalid customer ID" });
+        }
+
+        // בדיקה שהלקוח קיים ושייך למשתמש המחובר
+        const customer = await customerDatabase.getCustomerById(customerId);
+        
+        if (!customer) {
+            return res.status(404).json({ message: "Customer not found" });
+        }
+
+        if (customer.userName !== username) {
+            return res.status(403).json({ message: "ACCESS BLOCKED: You can only delete your own customers" });
+        }
+
+        const result = await customerDatabase.deleteCustomer(customerId);
+        
+        if (result && result.affectedRows > 0) {
+            res.status(200).json({ message: "Customer deleted successfully" });
+        } else {
+            res.status(500).json({ message: "Failed to delete customer" });
+        }
+    } catch (error) {
+        console.error("Delete Customer Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// POST /customers/search - חיפוש לקוח לפי customerName ו-userName
+app.post('/customers/search', authJWT.authenticateToken, async (req, res) => {
+    try {
+        const username = req.username.user;
+        const { customerName } = req.body;
+
+        if (!username) {
+            return res.status(401).json({ message: "ACCESS BLOCKED: Invalid token" });
+        }
+
+        if (!customerName) {
+            return res.status(400).json({ message: "Missing customerName field" });
+        }
+
+        // חיפוש רק עם userName של המשתמש המחובר
+        const customer = await customerDatabase.getCustomerByNameAndUsername(customerName, username);
+        console.log(customer);
+        
+        if (!customer) {
+            return res.status(404).json({ message: "Customer not found" });
+        }
+
+        res.status(200).json({ customer : customer });
+    } catch (error) {
+        console.error("Search Customer Error:", error);
         res.status(500).json({ message: "Server error" });
     }
 });
