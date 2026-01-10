@@ -57,8 +57,6 @@ const testDB = async () => {
 };
 
 const saveResetToken = async (email, token, expiry) => {
-    // תיקון Timezone קריטי: ממיר לזמן מקומי שמתאים ל-MySQL
-    // ללא זה, השרת שומר זמן UTC והשאילתה חושבת שהטוקן פג תוקף מייד
     const offset = expiry.getTimezoneOffset() * 60000; 
     const localISOTime = (new Date(expiry - offset)).toISOString().slice(0, 19).replace('T', ' ');
 

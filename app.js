@@ -21,7 +21,6 @@ app.use(cors({
 }));app.use(express.json());
 
 app.use(cookieParser()); 
-// הגדרת Rate Limiter (הגנה רשתית)
 const loginLimiter = rateLimit(config.rateLimit);
 
 // --- REGISTER ---
@@ -52,6 +51,33 @@ app.get('/protectedJWT', authJWT.authenticateToken, (req, res) => {
   res.json({ message: `Hello user ${req.user.id}` });
 });
 
+app.get('/getUserName', authJWT.authenticateToken, async (req, res) => {
+    try {
+        console.log(req.username.user)
+        const  username  = req.username.user;
+        const tokenUsername = req.username.user;
+
+        if (!username) {
+            return res.status(400).json({ message: "Missing username parameter" });
+        }
+
+        if (tokenUsername !== username) {
+            return res.status(403).json({ message: "ACCESS BLOCKED" });
+        }
+
+        const user = await database.getUserByUsername(username);
+        
+        if (!user) {
+            return res.status(404).json({ message: "NOT FOUND" });
+        }
+
+        res.status(200).json({ username: user.username });
+    } catch (error) {
+        console.error("Get User Name Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     console.log(`Login attempt: ${username}`);
@@ -61,7 +87,6 @@ app.post('/login', async (req, res) => {
         
         if (!user) return res.status(401).json({ message: "Auth failed" });
 
-        // ---  בדיקת זמן שחרור ---
         if (user.is_locked) {
             const now = new Date();
             const lockUntil = user.lock_until ? new Date(user.lock_until) : null;
@@ -140,7 +165,6 @@ app.post('/change-password', authJWT.authenticateToken, async (req, res) => {
         let history = [];
         try { history = JSON.parse(user.password_history || "[]"); } catch (e) {}
 
-        // היסטוריה
         for (let oldHash of history) {
             if (await bcryptUtils.checkIfThePasswordIsCorrect(newPassword, oldHash)) {
                 return res.status(400).json({ message: "Password in history" });
@@ -210,8 +234,6 @@ app.post('/forgot-password', async (req, res) => {
         console.log("MAIL USER:", process.env.GMAIL_USER);
         console.log("MAIL PASS exists:", !!process.env.GMAIL_APP_PASSWORD);
 
-
-        // שליחה בפועל
         await transporter.sendMail(mailOptions);
         console.log(`[SUCCESS] Email sent successfully to ${email}`);
         
@@ -223,7 +245,6 @@ app.post('/forgot-password', async (req, res) => {
     }
 });
 
-// --- RESET PASSWORD (עם אכיפת היסטוריה) ---
 app.post('/reset-password', async (req, res) => {
     const { token, newPassword } = req.body;
     const tokenHash = crypto.createHash('sha1').update(token).digest('hex');
@@ -275,9 +296,6 @@ app.post('/reset-password', async (req, res) => {
     }
 });
 
-// --- CUSTOMERS ROUTES ---
-
-// GET /customers - קבלת כל הלקוחות של המשתמש המחובר
 app.get('/customers', authJWT.authenticateToken, async (req, res) => {
     try {
         const username = req.username.user;
@@ -293,7 +311,6 @@ app.get('/customers', authJWT.authenticateToken, async (req, res) => {
     }
 });
 
-// GET /customers/:customerId - קבלת לקוח ספציפי
 app.get('/customers/:customerId', authJWT.authenticateToken, async (req, res) => {
     try {
         const username = req.username.user;
@@ -313,7 +330,6 @@ app.get('/customers/:customerId', authJWT.authenticateToken, async (req, res) =>
             return res.status(404).json({ message: "Customer not found" });
         }
 
-        // בדיקה שהלקוח שייך למשתמש המחובר
         if (customer.userName !== username) {
             return res.status(403).json({ message: "ACCESS BLOCKED: You can only access your own customers" });
         }
@@ -325,7 +341,6 @@ app.get('/customers/:customerId', authJWT.authenticateToken, async (req, res) =>
     }
 });
 
-// POST /customers - הוספת לקוח חדש
 app.post('/customers', authJWT.authenticateToken, async (req, res) => {
     try {
         const username = req.username.user;
@@ -335,7 +350,6 @@ app.post('/customers', authJWT.authenticateToken, async (req, res) => {
             return res.status(401).json({ message: "ACCESS BLOCKED: Invalid token" });
         }
 
-        // בדיקה שהמשתמש לא מנסה להוסיף לקוח עם userName אחר
         if (userName && userName !== username) {
             return res.status(403).json({ message: "ACCESS BLOCKED: You can only create customers for your own account" });
         }
@@ -344,7 +358,6 @@ app.post('/customers', authJWT.authenticateToken, async (req, res) => {
             return res.status(400).json({ message: "Missing customerName field" });
         }
 
-        // שימוש ב-username מהטוקן, לא מהבקשה
         const result = await customerDatabase.createCustomer(username, customerName, customerPhone || null);
         
         if (result && result.affectedRows > 0) {
@@ -358,7 +371,6 @@ app.post('/customers', authJWT.authenticateToken, async (req, res) => {
     }
 });
 
-// DELETE /customers/:customerId - מחיקת לקוח
 app.delete('/customers/:customerId', authJWT.authenticateToken, async (req, res) => {
     try {
         const username = req.username.user;
@@ -372,7 +384,6 @@ app.delete('/customers/:customerId', authJWT.authenticateToken, async (req, res)
             return res.status(400).json({ message: "Invalid customer ID" });
         }
 
-        // בדיקה שהלקוח קיים ושייך למשתמש המחובר
         const customer = await customerDatabase.getCustomerById(customerId);
         
         if (!customer) {
@@ -396,7 +407,6 @@ app.delete('/customers/:customerId', authJWT.authenticateToken, async (req, res)
     }
 });
 
-// POST /customers/search - חיפוש לקוח לפי customerName ו-userName
 app.post('/customers/search', authJWT.authenticateToken, async (req, res) => {
     try {
         const username = req.username.user;
@@ -410,7 +420,6 @@ app.post('/customers/search', authJWT.authenticateToken, async (req, res) => {
             return res.status(400).json({ message: "Missing customerName field" });
         }
 
-        // חיפוש רק עם userName של המשתמש המחובר
         const customer = await customerDatabase.getCustomerByNameAndUsername(customerName, username);
         console.log(customer);
         
