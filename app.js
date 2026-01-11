@@ -11,6 +11,8 @@ const customerDatabase = require('./database/CustomerUtils/customerUtils');
 const config = require('./passwordSecurityConfig'); 
 const authJWT = require('./Encryptes/authJWT');
 const cookieParser = require('cookie-parser'); 
+const validateInputLength = require('./middleware/validateLength');
+
 
 const app = express();
 const port = 3000;
@@ -21,7 +23,9 @@ app.use(cors({
 }));app.use(express.json());
 
 app.use(cookieParser()); 
+app.use(validateInputLength);
 const loginLimiter = rateLimit(config.rateLimit);
+app.use(loginLimiter);
 
 // --- REGISTER ---
 app.post('/register', async (req, res) => {
@@ -36,7 +40,13 @@ app.post('/register', async (req, res) => {
 
     try {
         const userExists = await database.checkUserExists(username);
-        if (userExists) return res.status(409).json({ message: "Username taken" });
+        if (userExists) {
+            return res.status(409).json({ message: "Username taken" });
+        }
+        const mailNotInUse = await database.checkIfMailNotInUse(email);
+        if (!mailNotInUse) {
+            return res.status(409).json({ message: "Email already in use" });
+        }
 
         const passwordHash = await bcryptUtils.createUserHash(password);
         await database.createUser(username, email, passwordHash);
@@ -47,9 +57,6 @@ app.post('/register', async (req, res) => {
     }
 });
 
-app.get('/protectedJWT', authJWT.authenticateToken, (req, res) => {
-  res.json({ message: `Hello user ${req.user.id}` });
-});
 
 app.get('/getUserName', authJWT.authenticateToken, async (req, res) => {
     try {
@@ -221,7 +228,7 @@ app.post('/forgot-password', async (req, res) => {
          from: `"Syber Security Support" <${process.env.GMAIL_USER}>`,
 
             to: email,
-            subject: 'Reset Your Password - Syber sequrity',
+            subject: 'Reset Your Password - Cyber security',
             html: `
                 <h3>Password Reset Request</h3>
                 <p>Hello,</p>

@@ -14,6 +14,11 @@ const checkUserExists = async (username) => {
     return rows.length > 0;
 };
 
+const checkIfMailNotInUse = async (email) => {
+    const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
+    return rows.length == 0;
+};
+
 const createUser = async (username, email, passwordHash) => {
     const sql = `INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)`;
     const [result] = await pool.execute(sql, [username, email, passwordHash]);
@@ -87,5 +92,6 @@ module.exports = {
     lockUser,
     saveResetToken,
     getUserByResetToken,
-    clearResetToken
+    clearResetToken,
+    checkIfMailNotInUse
 };
