@@ -28,7 +28,7 @@ CREATE TABLE `customers` (
   `customerName` varchar(45) DEFAULT NULL,
   `customerPhone` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`customerId`,`userName`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -37,7 +37,7 @@ CREATE TABLE `customers` (
 
 LOCK TABLES `customers` WRITE;
 /*!40000 ALTER TABLE `customers` DISABLE KEYS */;
-INSERT INTO `customers` VALUES (2,'ran','dcdc','656'),(3,'ran2','fjeikjf','541654564'),(4,'ran2','ש','2'),(5,'ran','Ran','123131'),(6,'ran','Ron','41321321');
+INSERT INTO `customers` VALUES (2,'ran','dcdc','656'),(3,'ran2','fjeikjf','541654564'),(4,'ran2','ש','2'),(5,'ran','Ran','123131'),(6,'ran','Ron','41321321'),(7,'ran','55','0502665678'),(8,'ran','<svg onload=alert(\"hi\")>','0502665678'),(9,'ran','(select count(*) from users)','0502665678'),(11,'ran','(select count(*) from users) , 050266) #','050266'),(12,'ran','ran','12'),(15,'ran','ran','12'),(16,'ran','twst','1521'),(17,'ran','ran','12'),(18,'ran2','ran','12'),(19,'ran2','(SELECT count(*) FROM users)) #','44'),(20,'ran2','ran','12'),(22,'ran','12','050'),(23,'ran2','<script>alert(\'XSS Beep\')</script>','543'),(24,'ran2','a','0'),(25,'ran','12','050');
 /*!40000 ALTER TABLE `customers` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -50,4 +50,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-10 14:55:37
+-- Dump completed on 2026-01-16 17:04:49

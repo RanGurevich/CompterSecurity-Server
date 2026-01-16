@@ -1,4 +1,4 @@
-const ALLOWED_LONG_FIELDS = ['token'];
+const ALLOWED_LONG_FIELDS = ['token', 'email'];
 const MAX_LENGTH = 20;
 
 

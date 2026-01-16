@@ -11,6 +11,7 @@ const customerDatabase = require('./database/CustomerUtils/customerUtils');
 const config = require('./passwordSecurityConfig'); 
 const authJWT = require('./Encryptes/authJWT');
 const cookieParser = require('cookie-parser'); 
+const blockPlainText = require('./middleware/blockPlainText');
 const validateInputLength = require('./middleware/validateLength');
 
 
@@ -23,6 +24,7 @@ app.use(cors({
 }));app.use(express.json());
 
 app.use(cookieParser()); 
+app.use(blockPlainText);
 app.use(validateInputLength);
 const loginLimiter = rateLimit(config.rateLimit);
 app.use(loginLimiter);
@@ -225,7 +227,7 @@ app.post('/forgot-password', async (req, res) => {
         await database.saveResetToken(email, tokenHash, expiryDate);
         
         const mailOptions = {
-         from: `"Syber Security Support" <${process.env.GMAIL_USER}>`,
+         from: `"Cyber Security Support" <${process.env.GMAIL_USER}>`,
 
             to: email,
             subject: 'Reset Your Password - Cyber security',
