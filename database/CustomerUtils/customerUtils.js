@@ -35,15 +35,9 @@ const getCustomersByUsername = async (userName) => {
     return rows;
 };
 
-const deleteCustomer = async (customerId) => {
-    const sql = `DELETE FROM customers WHERE customerId = ?`;
-    const [result] = await pool.execute(sql, [customerId]);
-    return result;
-};
 
 module.exports = { 
     createCustomer,
-    deleteCustomer,
     getCustomerByNameAndUsername,
     checkCustomerExists,
     getCustomerById,
