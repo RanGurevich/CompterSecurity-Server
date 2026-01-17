@@ -380,42 +380,6 @@ app.post('/customers', authJWT.authenticateToken, async (req, res) => {
     }
 });
 
-app.delete('/customers/:customerId', authJWT.authenticateToken, async (req, res) => {
-    try {
-        const username = req.username.user;
-        const customerId = parseInt(req.params.customerId);
-
-        if (!username) {
-            return res.status(401).json({ message: "ACCESS BLOCKED: Invalid token" });
-        }
-
-        if (isNaN(customerId)) {
-            return res.status(400).json({ message: "Invalid customer ID" });
-        }
-
-        const customer = await customerDatabase.getCustomerById(customerId);
-        
-        if (!customer) {
-            return res.status(404).json({ message: "Customer not found" });
-        }
-
-        if (customer.userName !== username) {
-            return res.status(403).json({ message: "ACCESS BLOCKED: You can only delete your own customers" });
-        }
-
-        const result = await customerDatabase.deleteCustomer(customerId);
-        
-        if (result && result.affectedRows > 0) {
-            res.status(200).json({ message: "Customer deleted successfully" });
-        } else {
-            res.status(500).json({ message: "Failed to delete customer" });
-        }
-    } catch (error) {
-        console.error("Delete Customer Error:", error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
 app.post('/customers/search', authJWT.authenticateToken, async (req, res) => {
     try {
         const username = req.username.user;
