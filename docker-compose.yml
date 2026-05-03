@@ -1,0 +1,60 @@
+services:
+
+  # ── Database ──────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: security-data
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sqlScripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - backend-net          # DB is ONLY on the backend network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Server ────────────────────────────────────────────────────
+  server:
+    build: .
+    env_file: .env           # loads GMAIL_USER, GMAIL_APP_PASSWORD, JWT_SECRET
+    environment:
+      DB_HOST: db            # overrides DB_HOST from .env → points to container
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: security-data
+      NODE_ENV: production
+    ports:
+      - "3000:3000"          # browser → server (needed because client JS runs in browser)
+    networks:
+      - frontend-net         # can be reached by the client container
+      - backend-net          # can reach the DB
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Client ────────────────────────────────────────────────────
+  client:
+    build:
+      context: ../CompterSecurity-Client/client
+    ports:
+      - "5173:80"
+    networks:
+      - frontend-net         # same network as server (for future proxy use)
+    depends_on:
+      - server
+
+# ── Volumes ───────────────────────────────────────────────────
+volumes:
+  mysql_data:
+
+# ── Networks ──────────────────────────────────────────────────
+networks:
+  frontend-net:              # Client <-> Server
+    driver: bridge
+  backend-net:               # Server <-> DB  (DB is invisible to the client container)
+    driver: bridge
